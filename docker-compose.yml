@@ -1,0 +1,16 @@
+services:
+  postgis:
+    image: postgis/postgis:16-3.4
+    container_name: girs_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: girs_user
+      POSTGRES_PASSWORD: girs_password
+      POSTGRES_DB: girs_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - girs_pgdata:/var/lib/postgresql/data
+
+volumes:
+  girs_pgdata:

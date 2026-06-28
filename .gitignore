@@ -1,0 +1,27 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# next.js
+.next/
+out/
+
+# environment files
+.env
+.env.local
+.env.*.local
+
+# build
+dist/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# editor
+.vscode/
+.idea/
+
+# drizzle
+# (keep db/migrations/ committed — never ignore it)
