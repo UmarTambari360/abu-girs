@@ -1,30 +1,58 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { locations } from "@/db/schema";
-import { ilike, eq, and, sql } from "drizzle-orm";
+import { sql, ilike, eq, and } from "drizzle-orm";
 import { searchSchema } from "@/lib/validators/location";
 import type { SearchResult } from "@/types";
 
 export async function GET(req: NextRequest) {
-  const params = Object.fromEntries(req.nextUrl.searchParams.entries());
-  const parsed = searchSchema.safeParse(params);
-
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
-  }
-
-  const { q, category, lat, lng, radius } = parsed.data;
-
   try {
-    // Proximity search: use raw SQL with PostGIS earth_distance or the Haversine formula
+    // 1. Parse and validate query params
+    const { searchParams } = req.nextUrl;
+
+    const raw = {
+      q: searchParams.get("q") ?? undefined,
+      category: searchParams.get("category") ?? undefined,
+      lat: searchParams.get("lat") ?? undefined,
+      lng: searchParams.get("lng") ?? undefined,
+      radius: searchParams.get("radius") ?? undefined,
+    };
+
+    const parsed = searchSchema.safeParse(raw);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid query parameters", details: parsed.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { q, category, lat, lng, radius } = parsed.data;
+
+    // 2. Proximity search — PostGIS path
     if (lat !== undefined && lng !== undefined) {
-      // Uses PostGIS ST_DWithin for radius filter + ST_Distance for ordering
-      // Distances are in metres (geography type)
-      const rows = await db.execute<SearchResult>(sql`
-        SELECT *,
-          ST_Distance(
-            ST_MakePoint(longitude, latitude)::geography,
-            ST_MakePoint(${lng}, ${lat})::geography
+      // ST_DWithin on geography type uses metres automatically.
+      // ST_Distance likewise returns metres.
+      // We cast the stored lat/lng columns into a geography point on the fly.
+      const rows = await db.execute<
+        SearchResult & { distance: number }
+      >(sql`
+        SELECT
+          id,
+          name,
+          category,
+          description,
+          address,
+          latitude,
+          longitude,
+          created_at  AS "createdAt",
+          updated_at  AS "updatedAt",
+          ROUND(
+            ST_Distance(
+              ST_MakePoint(longitude, latitude)::geography,
+              ST_MakePoint(${lng}, ${lat})::geography
+            )::numeric,
+            2
           ) AS distance
         FROM locations
         WHERE
@@ -42,20 +70,30 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ data: rows.rows });
     }
 
-    // Text + category search
+    // 3. Text / category search — Drizzle query builder path
     const filters = [];
-    if (q) filters.push(ilike(locations.name, `%${q}%`));
-    if (category) filters.push(eq(locations.category, category));
+
+    if (q) {
+      filters.push(ilike(locations.name, `%${q}%`));
+    }
+
+    if (category) {
+      filters.push(eq(locations.category, category));
+    }
 
     const rows = await db
       .select()
       .from(locations)
-      .where(filters.length ? and(...filters) : undefined)
+      .where(filters.length > 0 ? and(...filters) : undefined)
+      .orderBy(locations.name)
       .limit(20);
 
-    return NextResponse.json({ data: rows });
-  } catch (err) {
-    console.error(err);
-    return NextResponse.json({ error: "Search failed" }, { status: 500 });
+    return NextResponse.json({ data: rows as SearchResult[] });
+  } catch (error) {
+    console.error("[GET /api/search]", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }

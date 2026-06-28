@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { db } from "@/db";
 import { locations } from "@/db/schema";
 import { asc } from "drizzle-orm";
+import type { Location } from "@/types";
 
 export async function GET() {
   try {
@@ -9,8 +10,13 @@ export async function GET() {
       .select()
       .from(locations)
       .orderBy(asc(locations.name));
-    return NextResponse.json({ data: rows });
-  } catch {
-    return NextResponse.json({ error: "Failed to fetch locations" }, { status: 500 });
+
+    return NextResponse.json({ data: rows as Location[] });
+  } catch (error) {
+    console.error("[GET /api/locations]", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
 }
