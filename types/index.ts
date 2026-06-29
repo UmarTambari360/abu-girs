@@ -1,9 +1,9 @@
-import type { Category } from "@/lib/validators/location";
+import type { categoryEnum } from "@/lib/validators/location";
 
 export type Location = {
   id: number;
   name: string;
-  category: Category;
+  category: typeof categoryEnum;
   description: string | null;
   address: string | null;
   latitude: number;

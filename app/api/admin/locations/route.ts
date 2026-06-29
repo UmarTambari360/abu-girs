@@ -1,62 +1,170 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@/lib/auth";
+import { eq } from "drizzle-orm";
 import { db } from "@/db";
 import { locations } from "@/db/schema";
-import { eq } from "drizzle-orm";
-import { locationSchema } from "@/lib/validators/location";
+import { auth } from "@/lib/auth";
+import { locationSchema, idParamSchema } from "@/lib/validators/location";
 
-// POST /api/admin/locations — create
-export async function POST(req: NextRequest) {
+export const runtime = 'nodejs';
+export const dynamic = 'force-dynamic';
+
+// ─── Auth guard helper ────────────────────────────────────────────────────────
+
+async function requireAuth(): Promise<NextResponse | null> {
   const session = await auth();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-
-  const body = await req.json();
-  const parsed = locationSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  if (!session) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-
-  const [created] = await db.insert(locations).values(parsed.data).returning();
-  return NextResponse.json({ data: created }, { status: 201 });
+  return null;
 }
 
-// PUT /api/admin/locations?id=1 — update
-export async function PUT(req: NextRequest) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+// ─── POST /api/admin/locations ────────────────────────────────────────────────
+// Creates a new location. Returns the created row with status 201.
 
-  const id = Number(req.nextUrl.searchParams.get("id"));
-  if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+export async function POST(req: NextRequest): Promise<NextResponse> {
+  const authError = await requireAuth();
+  if (authError) return authError;
 
-  const body = await req.json();
-  const parsed = locationSchema.safeParse(body);
-  if (!parsed.success) {
-    return NextResponse.json({ error: parsed.error.flatten() }, { status: 400 });
+  try {
+    const body: unknown = await req.json();
+    const parsed = locationSchema.safeParse(body);
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Validation failed", details: parsed.error.flatten() },
+        { status: 422 }
+      );
+    }
+
+    const { name, category, description, address, latitude, longitude } =
+      parsed.data;
+
+    const [created] = await db
+      .insert(locations)
+      .values({
+        name,
+        category,
+        description: description ?? null,
+        address: address ?? null,
+        latitude,
+        longitude,
+      })
+      .returning();
+
+    return NextResponse.json({ data: created }, { status: 201 });
+  } catch (error) {
+    console.error("[POST /api/admin/locations]", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
   }
-
-  const [updated] = await db
-    .update(locations)
-    .set({ ...parsed.data, updatedAt: new Date() })
-    .where(eq(locations.id, id))
-    .returning();
-
-  if (!updated) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json({ data: updated });
 }
 
-// DELETE /api/admin/locations?id=1
-export async function DELETE(req: NextRequest) {
-  const session = await auth();
-  if (!session) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+// ─── PUT /api/admin/locations?id=<number> ────────────────────────────────────
+// Updates an existing location. Returns the updated row.
 
-  const id = Number(req.nextUrl.searchParams.get("id"));
-  if (!id) return NextResponse.json({ error: "Missing id" }, { status: 400 });
+export async function PUT(req: NextRequest): Promise<NextResponse> {
+  const authError = await requireAuth();
+  if (authError) return authError;
 
-  const [deleted] = await db
-    .delete(locations)
-    .where(eq(locations.id, id))
-    .returning();
+  try {
+    // Validate the ?id= query param
+    const { searchParams } = new URL(req.url);
+    const paramParsed = idParamSchema.safeParse({ id: searchParams.get("id") });
 
-  if (!deleted) return NextResponse.json({ error: "Not found" }, { status: 404 });
-  return NextResponse.json({ data: deleted });
+    if (!paramParsed.success) {
+      return NextResponse.json(
+        { error: "Invalid or missing location ID" },
+        { status: 400 }
+      );
+    }
+
+    const { id } = paramParsed.data;
+
+    // Validate request body
+    const body: unknown = await req.json();
+    const bodyParsed = locationSchema.safeParse(body);
+
+    if (!bodyParsed.success) {
+      return NextResponse.json(
+        { error: "Validation failed", details: bodyParsed.error.flatten() },
+        { status: 422 }
+      );
+    }
+
+    const { name, category, description, address, latitude, longitude } =
+      bodyParsed.data;
+
+    const [updated] = await db
+      .update(locations)
+      .set({
+        name,
+        category,
+        description: description ?? null,
+        address: address ?? null,
+        latitude,
+        longitude,
+        updatedAt: new Date(),
+      })
+      .where(eq(locations.id, id))
+      .returning();
+
+    if (!updated) {
+      return NextResponse.json(
+        { error: "Location not found" },
+        { status: 404 }
+      );
+    }
+
+    return NextResponse.json({ data: updated });
+  } catch (error) {
+    console.error("[PUT /api/admin/locations]", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
+}
+
+// ─── DELETE /api/admin/locations?id=<number> ─────────────────────────────────
+// Deletes a location by ID. Returns 204 No Content on success.
+
+export async function DELETE(req: NextRequest): Promise<NextResponse> {
+  const authError = await requireAuth();
+  if (authError) return authError;
+
+  try {
+    const { searchParams } = new URL(req.url);
+    const parsed = idParamSchema.safeParse({ id: searchParams.get("id") });
+
+    if (!parsed.success) {
+      return NextResponse.json(
+        { error: "Invalid or missing location ID" },
+        { status: 400 }
+      );
+    }
+
+    const { id } = parsed.data;
+
+    const [deleted] = await db
+      .delete(locations)
+      .where(eq(locations.id, id))
+      .returning({ id: locations.id });
+
+    if (!deleted) {
+      return NextResponse.json(
+        { error: "Location not found" },
+        { status: 404 }
+      );
+    }
+
+    return new NextResponse(null, { status: 204 });
+  } catch (error) {
+    console.error("[DELETE /api/admin/locations]", error);
+    return NextResponse.json(
+      { error: "Internal server error" },
+      { status: 500 }
+    );
+  }
 }
