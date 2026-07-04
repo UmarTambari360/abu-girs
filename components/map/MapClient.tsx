@@ -15,7 +15,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 
-// ─── Types ────────────────────────────────────────────────────────────────────
+// ─── Types
 
 type Category =
   | "academic"
@@ -45,21 +45,71 @@ const CATEGORY_CONFIG: Record<
   Category,
   { label: string; color: string; bg: string; dot: string }
 > = {
-  academic:       { label: "Academic",       color: "text-blue-700",   bg: "bg-blue-50",   dot: "#1d4ed8" },
-  administrative: { label: "Administrative", color: "text-purple-700", bg: "bg-purple-50", dot: "#7e22ce" },
-  health:         { label: "Health",         color: "text-red-700",    bg: "bg-red-50",    dot: "#b91c1c" },
-  accommodation:  { label: "Accommodation",  color: "text-orange-700", bg: "bg-orange-50", dot: "#c2410c" },
-  recreation:     { label: "Recreation",     color: "text-teal-700",   bg: "bg-teal-50",   dot: "#0f766e" },
-  worship:        { label: "Worship",        color: "text-yellow-700", bg: "bg-yellow-50", dot: "#a16207" },
-  transport:      { label: "Transport",      color: "text-cyan-700",   bg: "bg-cyan-50",   dot: "#0e7490" },
-  food:           { label: "Food & Dining",  color: "text-lime-700",   bg: "bg-lime-50",   dot: "#4d7c0f" },
-  security:       { label: "Security",       color: "text-gray-700",   bg: "bg-gray-100",  dot: "#374151" },
-  other:          { label: "Other",          color: "text-green-700",  bg: "bg-green-50",  dot: "#15803d" },
+  academic: {
+    label: "Academic",
+    color: "text-blue-700",
+    bg: "bg-blue-50",
+    dot: "#1d4ed8",
+  },
+  administrative: {
+    label: "Administrative",
+    color: "text-purple-700",
+    bg: "bg-purple-50",
+    dot: "#7e22ce",
+  },
+  health: {
+    label: "Health",
+    color: "text-red-700",
+    bg: "bg-red-50",
+    dot: "#b91c1c",
+  },
+  accommodation: {
+    label: "Accommodation",
+    color: "text-orange-700",
+    bg: "bg-orange-50",
+    dot: "#c2410c",
+  },
+  recreation: {
+    label: "Recreation",
+    color: "text-teal-700",
+    bg: "bg-teal-50",
+    dot: "#0f766e",
+  },
+  worship: {
+    label: "Worship",
+    color: "text-yellow-700",
+    bg: "bg-yellow-50",
+    dot: "#a16207",
+  },
+  transport: {
+    label: "Transport",
+    color: "text-cyan-700",
+    bg: "bg-cyan-50",
+    dot: "#0e7490",
+  },
+  food: {
+    label: "Food & Dining",
+    color: "text-lime-700",
+    bg: "bg-lime-50",
+    dot: "#4d7c0f",
+  },
+  security: {
+    label: "Security",
+    color: "text-gray-700",
+    bg: "bg-gray-100",
+    dot: "#374151",
+  },
+  other: {
+    label: "Other",
+    color: "text-green-700",
+    bg: "bg-green-50",
+    dot: "#15803d",
+  },
 };
 
 // ─── ABU Senate Building — default map centre ─────────────────────────────────
 
-const ABU_CENTER: [number, number] = [11.1572, 7.6369];
+const ABU_CENTER: [number, number] = [11.150642, 7.654551];
 const DEFAULT_ZOOM = 15;
 
 // ─── Component ────────────────────────────────────────────────────────────────
@@ -67,11 +117,9 @@ const DEFAULT_ZOOM = 15;
 export default function MapClient() {
   const searchParams = useSearchParams();
   const mapContainerRef = useRef<HTMLDivElement>(null);
-
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const mapRef = useRef<any>(null);
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const markersRef = useRef<Map<number, any>>(new Map());
+  const isInitializedRef = useRef(false);
 
   const [locations, setLocations] = useState<Location[]>([]);
   const [selected, setSelected] = useState<Location | null>(null);
@@ -104,30 +152,37 @@ export default function MapClient() {
   // ── Initialise Leaflet map ───────────────────────────────────────────────────
 
   useEffect(() => {
-    if (mapRef.current !== null) return; // already initialised
+    // Prevent multiple initializations
+    if (isInitializedRef.current) return;
+    if (mapRef.current !== null) return;
     if (mapContainerRef.current === null) return;
+
+    let isMounted = true;
 
     // Dynamic import — runs only in the browser
     import("leaflet").then((L) => {
+      if (!isMounted) return;
       if (mapContainerRef.current === null) return;
 
       // Fix webpack/Leaflet broken default icon paths
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       delete (L.Icon.Default.prototype as any)._getIconUrl;
       L.Icon.Default.mergeOptions({
-        iconUrl:
-          "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
+        iconUrl: "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png",
         iconRetinaUrl:
           "https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png",
         shadowUrl:
           "https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png",
       });
 
+      // Check if container still exists and map hasn't been initialized
+      if (!mapContainerRef.current || mapRef.current !== null) return;
+
       // Initialise map
       const map = L.map(mapContainerRef.current, {
         center: ABU_CENTER,
         zoom: DEFAULT_ZOOM,
-        zoomControl: false, // we'll place custom zoom control
+        zoomControl: false,
       });
 
       // OpenStreetMap tiles
@@ -141,14 +196,38 @@ export default function MapClient() {
       L.control.zoom({ position: "bottomright" }).addTo(map);
 
       mapRef.current = map;
+      isInitializedRef.current = true;
+
+      // Invalidate size after a short delay to ensure container is rendered
+      setTimeout(() => {
+        if (mapRef.current) {
+          mapRef.current.invalidateSize();
+        }
+      }, 200);
     });
 
     // Cleanup on unmount
     return () => {
+      isMounted = false;
       if (mapRef.current !== null) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        (mapRef.current as any).remove();
+        try {
+          // Remove all markers first
+          markersRef.current.forEach((marker) => {
+            try {
+              marker.remove();
+            } catch (e) {
+              // Ignore removal errors
+            }
+          });
+          markersRef.current.clear();
+
+          // Remove the map
+          mapRef.current.remove();
+        } catch (e) {
+          // Ignore cleanup errors
+        }
         mapRef.current = null;
+        isInitializedRef.current = false;
       }
     };
   }, []);
@@ -158,12 +237,21 @@ export default function MapClient() {
   useEffect(() => {
     if (mapRef.current === null || locations.length === 0) return;
 
+    let isMounted = true;
+
     import("leaflet").then((L) => {
+      if (!isMounted) return;
       const map = mapRef.current;
       if (map === null) return;
 
       // Clear existing markers
-      markersRef.current.forEach((marker) => marker.remove());
+      markersRef.current.forEach((marker) => {
+        try {
+          marker.remove();
+        } catch (e) {
+          // Ignore removal errors
+        }
+      });
       markersRef.current.clear();
 
       locations.forEach((loc) => {
@@ -173,7 +261,7 @@ export default function MapClient() {
         const icon = L.divIcon({
           className: "",
           html: `
-            <div style="
+            <div class="girs-marker-dot" style="
               width: 28px;
               height: 28px;
               background: ${cfg.dot};
@@ -193,6 +281,14 @@ export default function MapClient() {
           .on("click", () => {
             setSelected(loc);
           });
+
+        // Hover tooltip — reveals the location name above the pill
+        marker.bindTooltip(loc.name, {
+          direction: "top",
+          offset: L.point(0, -16),
+          opacity: 1,
+          className: "girs-marker-tooltip",
+        });
 
         markersRef.current.set(loc.id, marker);
       });
@@ -218,12 +314,17 @@ export default function MapClient() {
         }
       }
     });
+
+    return () => {
+      isMounted = false;
+    };
   }, [locations, searchParams]);
 
   // ── Pan map when selected location changes ───────────────────────────────────
 
   useEffect(() => {
     if (selected === null || mapRef.current === null) return;
+
     import("leaflet").then(() => {
       const map = mapRef.current;
       if (map === null) return;
@@ -242,7 +343,7 @@ export default function MapClient() {
     : null;
 
   return (
-    <>
+    <div className="relative w-full h-full">
       {/* Leaflet CSS */}
       <link
         rel="stylesheet"
@@ -250,6 +351,32 @@ export default function MapClient() {
         integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
         crossOrigin=""
       />
+
+      {/* Hover-pill tooltip styling — matches GIRS brand identity */}
+      <style>{`
+        .girs-marker-dot:hover {
+          transform: scale(1.15);
+        }
+
+        .leaflet-tooltip.girs-marker-tooltip {
+          background: #15803d;
+          color: #ffffff;
+          border: none;
+          border-radius: 9999px;
+          padding: 4px 12px;
+          font-family: var(--font-inter), sans-serif;
+          font-size: 12px;
+          font-weight: 600;
+          letter-spacing: 0.01em;
+          box-shadow: 0 4px 12px rgba(21, 128, 61, 0.35);
+          white-space: nowrap;
+          pointer-events: none;
+        }
+
+        .leaflet-tooltip.girs-marker-tooltip::before {
+          border-top-color: #15803d;
+        }
+      `}</style>
 
       {/* Map container */}
       <div ref={mapContainerRef} className="w-full h-full" />
@@ -303,17 +430,20 @@ export default function MapClient() {
               Categories
             </p>
             <div className="flex flex-col gap-1.5">
-              {(Object.entries(CATEGORY_CONFIG) as [Category, typeof CATEGORY_CONFIG[Category]][]).map(
-                ([key, cfg]) => (
-                  <div key={key} className="flex items-center gap-2">
-                    <div
-                      className="w-3 h-3 rounded-full flex-shrink-0 border-2 border-white shadow-sm"
-                      style={{ background: cfg.dot }}
-                    />
-                    <span className="text-xs text-gray-600">{cfg.label}</span>
-                  </div>
-                )
-              )}
+              {(
+                Object.entries(CATEGORY_CONFIG) as [
+                  Category,
+                  (typeof CATEGORY_CONFIG)[Category],
+                ][]
+              ).map(([key, cfg]) => (
+                <div key={key} className="flex items-center gap-2">
+                  <div
+                    className="w-3 h-3 rounded-full flex-shrink-0 border-2 border-white shadow-sm"
+                    style={{ background: cfg.dot }}
+                  />
+                  <span className="text-xs text-gray-600">{cfg.label}</span>
+                </div>
+              ))}
             </div>
           </div>
         </div>
@@ -421,6 +551,6 @@ export default function MapClient() {
           </div>
         )}
       </div>
-    </>
+    </div>
   );
 }

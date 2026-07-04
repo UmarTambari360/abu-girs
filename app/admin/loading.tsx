@@ -1,67 +1,152 @@
 export default function AdminLoading() {
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header skeleton */}
-      <div className="bg-white border-b border-gray-200 h-16 flex items-center px-6">
-        <div className="h-8 w-8 rounded-lg bg-gray-200 animate-pulse" />
-        <div className="h-4 w-40 rounded bg-gray-200 animate-pulse ml-3" />
-        <div className="ml-auto h-7 w-24 rounded-lg bg-gray-200 animate-pulse" />
-      </div>
+      {/* Header */}
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-20">
+        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-lg bg-green-200 animate-pulse" />
+            <div className="flex flex-col gap-1">
+              <div className="w-10 h-3.5 bg-gray-200 rounded animate-pulse" />
+              <div className="w-16 h-2.5 bg-gray-100 rounded animate-pulse" />
+            </div>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="w-32 h-3.5 bg-gray-200 rounded animate-pulse" />
+            <div className="w-20 h-8 bg-gray-100 rounded-lg animate-pulse" />
+          </div>
+        </div>
+      </header>
 
-      <div className="max-w-screen-xl mx-auto px-6 py-8 space-y-4">
-        {/* Title */}
-        <div className="h-7 w-64 rounded bg-gray-200 animate-pulse" />
-        <div className="h-4 w-48 rounded bg-gray-200 animate-pulse" />
-
+      <main className="max-w-7xl mx-auto px-6 py-8 space-y-6">
         {/* Stat cards */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pt-2">
-          {Array.from({ length: 6 }).map((_, i) => (
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
             <div
               key={i}
-              className="rounded-xl border border-gray-200 px-4 py-3 animate-pulse bg-white"
+              className="bg-white rounded-xl border border-gray-200 p-5 space-y-2"
             >
-              <div className="h-7 w-8 bg-gray-200 rounded mb-1" />
-              <div className="h-3 w-16 bg-gray-100 rounded" />
+              <div className="flex items-center justify-between">
+                <div
+                  className="w-20 h-3 bg-gray-100 rounded animate-pulse"
+                  style={{ animationDelay: `${i * 60}ms` }}
+                />
+                <div
+                  className="w-8 h-8 rounded-lg bg-gray-100 animate-pulse"
+                  style={{ animationDelay: `${i * 60}ms` }}
+                />
+              </div>
+              <div
+                className="w-10 h-7 bg-gray-200 rounded animate-pulse"
+                style={{ animationDelay: `${i * 60}ms` }}
+              />
             </div>
           ))}
         </div>
 
-        {/* Toolbar */}
-        <div className="bg-white rounded-xl border border-gray-200 p-4 animate-pulse">
-          <div className="flex gap-3">
-            <div className="flex-1 h-9 bg-gray-100 rounded-lg" />
-            <div className="w-36 h-9 bg-gray-100 rounded-lg" />
-            <div className="w-32 h-9 bg-gray-200 rounded-lg" />
-          </div>
-        </div>
-
-        {/* Table */}
+        {/* Table card */}
         <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
-          <div className="border-b border-gray-100 bg-gray-50 px-5 py-3 flex gap-4">
-            {["Name", "Category", "Description", "Coordinates"].map((h) => (
+          {/* Table toolbar */}
+          <div className="px-6 py-4 border-b border-gray-100 flex items-center gap-3">
+            <div className="flex-1 h-9 bg-gray-100 rounded-lg animate-pulse" />
+            <div className="w-36 h-9 bg-gray-100 rounded-lg animate-pulse" />
+            <div className="w-32 h-9 bg-green-100 rounded-lg animate-pulse" />
+          </div>
+
+          {/* Table header */}
+          <div className="px-6 py-3 border-b border-gray-100 grid grid-cols-12 gap-4 bg-gray-50">
+            {[3, 2, 3, 2, 2].map((cols, i) => (
               <div
-                key={h}
-                className="h-3 bg-gray-200 rounded w-20 animate-pulse"
+                key={i}
+                className={`col-span-${cols} h-3 bg-gray-200 rounded animate-pulse`}
+                style={{ animationDelay: `${i * 40}ms` }}
               />
             ))}
           </div>
-          {Array.from({ length: 8 }).map((_, i) => (
+
+          {/* Table rows */}
+          {Array.from({ length: 8 }).map((_, row) => (
             <div
-              key={i}
-              className="flex items-center gap-4 px-5 py-4 border-b border-gray-50"
+              key={row}
+              className="px-6 py-4 border-b border-gray-50 grid grid-cols-12 gap-4 items-center"
             >
-              <div className="w-7 h-7 rounded-lg bg-gray-100 animate-pulse shrink-0" />
-              <div className="h-4 bg-gray-100 rounded animate-pulse w-40" />
-              <div className="h-5 w-20 bg-gray-100 rounded-full animate-pulse ml-2" />
-              <div className="h-3 bg-gray-100 rounded animate-pulse w-48 hidden md:block ml-2" />
-              <div className="ml-auto flex gap-1">
-                <div className="w-7 h-7 rounded-lg bg-gray-100 animate-pulse" />
-                <div className="w-7 h-7 rounded-lg bg-gray-100 animate-pulse" />
+              {/* Name */}
+              <div className="col-span-3 flex items-center gap-2">
+                <div
+                  className="w-8 h-8 rounded-lg bg-gray-100 shrink-0 animate-pulse"
+                  style={{ animationDelay: `${row * 30}ms` }}
+                />
+                <div className="space-y-1.5 flex-1">
+                  <div
+                    className="h-3.5 bg-gray-200 rounded animate-pulse"
+                    style={{
+                      width: `${60 + (row % 4) * 15}%`,
+                      animationDelay: `${row * 30}ms`,
+                    }}
+                  />
+                  <div
+                    className="h-2.5 bg-gray-100 rounded animate-pulse"
+                    style={{
+                      width: `${40 + (row % 3) * 10}%`,
+                      animationDelay: `${row * 30 + 20}ms`,
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Category badge */}
+              <div className="col-span-2">
+                <div
+                  className="h-6 w-20 rounded-full bg-gray-100 animate-pulse"
+                  style={{ animationDelay: `${row * 30 + 10}ms` }}
+                />
+              </div>
+
+              {/* Description */}
+              <div className="col-span-3 space-y-1.5">
+                <div
+                  className="h-2.5 bg-gray-100 rounded animate-pulse"
+                  style={{ animationDelay: `${row * 30 + 15}ms` }}
+                />
+                <div
+                  className="h-2.5 bg-gray-100 rounded animate-pulse w-4/5"
+                  style={{ animationDelay: `${row * 30 + 25}ms` }}
+                />
+              </div>
+
+              {/* Coordinates */}
+              <div className="col-span-2 space-y-1">
+                <div
+                  className="h-2.5 w-24 bg-gray-100 rounded animate-pulse font-mono"
+                  style={{ animationDelay: `${row * 30 + 20}ms` }}
+                />
+                <div
+                  className="h-2.5 w-20 bg-gray-100 rounded animate-pulse"
+                  style={{ animationDelay: `${row * 30 + 30}ms` }}
+                />
+              </div>
+
+              {/* Actions */}
+              <div className="col-span-2 flex items-center justify-end gap-2">
+                <div
+                  className="w-8 h-8 rounded-lg bg-gray-100 animate-pulse"
+                  style={{ animationDelay: `${row * 30 + 35}ms` }}
+                />
+                <div
+                  className="w-8 h-8 rounded-lg bg-gray-100 animate-pulse"
+                  style={{ animationDelay: `${row * 30 + 45}ms` }}
+                />
               </div>
             </div>
           ))}
+
+          {/* Table footer */}
+          <div className="px-6 py-3 bg-gray-50 flex items-center justify-between">
+            <div className="w-28 h-3 bg-gray-200 rounded animate-pulse" />
+            <div className="w-20 h-3 bg-gray-100 rounded animate-pulse" />
+          </div>
         </div>
-      </div>
+      </main>
     </div>
   );
 }
