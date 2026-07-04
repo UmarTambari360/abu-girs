@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import type { Location } from "@/db/schema";
-import { CATEGORY_OPTIONS } from "@/lib/validators/location";
+import { CATEGORIES } from "@/lib/validators/location";
 import {
   MapPin,
   Plus,
@@ -258,7 +258,7 @@ export default function AdminLocationsClient({
             className="text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-600 bg-white text-gray-700"
           >
             <option value="all">All categories</option>
-            {CATEGORY_OPTIONS.map((c) => (
+            {CATEGORIES.map((c) => (
               <option key={c} value={c}>
                 {c.charAt(0).toUpperCase() + c.slice(1)}
               </option>
@@ -328,7 +328,7 @@ export default function AdminLocationsClient({
                 onChange={handleField}
                 className="w-full text-sm border border-gray-200 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-green-600 bg-white"
               >
-                {CATEGORY_OPTIONS.map((c) => (
+                {CATEGORIES.map((c) => (
                   <option key={c} value={c}>
                     {c.charAt(0).toUpperCase() + c.slice(1)}
                   </option>

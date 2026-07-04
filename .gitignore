@@ -1,27 +1,28 @@
-# dependencies
+# Dependencies
 node_modules/
-.pnp
-.pnp.js
+.pnpm-store/
 
-# next.js
+# Next.js build output
 .next/
 out/
 
-# environment files
+# Environment files — never commit secrets
 .env
 .env.local
 .env.*.local
-
-# build
-dist/
 
 # OS
 .DS_Store
 Thumbs.db
 
-# editor
+# Editor
 .vscode/
 .idea/
 
-# drizzle
-# (keep db/migrations/ committed — never ignore it)
+# Drizzle studio
+drizzle/
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
