@@ -4,6 +4,8 @@ import { locations } from "@/db/schema";
 import { asc } from "drizzle-orm";
 import type { Location } from "@/types";
 
+export const dynamic = 'force-dynamic';
+
 export async function GET() {
   try {
     const rows = await db

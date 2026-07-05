@@ -5,6 +5,8 @@ import { sql, ilike, eq, and } from "drizzle-orm";
 import { searchSchema } from "@/lib/validators/location";
 import type { SearchResult } from "@/types";
 
+export const dynamic = 'force-dynamic'
+
 export async function GET(req: NextRequest) {
   try {
     // 1. Parse and validate query params
