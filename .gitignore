@@ -26,3 +26,7 @@ drizzle/
 *.log
 npm-debug.log*
 pnpm-debug.log*
+
+# TypeScript build info
+*.tsbuildinfo
+tsconfig.tsbuildinfo
